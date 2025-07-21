@@ -1,0 +1,6 @@
+PyMuPDF==1.23.6
+sentence-transformers==2.2.0
+transformers==4.28.1
+huggingface_hub==0.13.3
+scikit-learn==1.4.0
+torch
