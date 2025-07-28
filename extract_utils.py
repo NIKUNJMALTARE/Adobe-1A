@@ -1,15 +1,12 @@
 import os
 import json
-import fitz  # PyMuPDF
+import fitz 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoConfig, AutoModel
 from safetensors.torch import load_file as safetensors_load_file
 
-# ---------------------------------------------------------
-# Locate model root (relative to this file)
-# ---------------------------------------------------------
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_ROOT = os.path.join(_THIS_DIR, "models", "all-MiniLM-L6-v2")
 
@@ -18,21 +15,17 @@ def _resolve_transformer_dir(root: str) -> str:
     Return the directory that contains config + weights.
     Supports SentenceTransformers layout & HF layout.
     """
-    # direct HF-style
     if os.path.exists(os.path.join(root, "config.json")) and (
         os.path.exists(os.path.join(root, "pytorch_model.bin")) or
         os.path.exists(os.path.join(root, "model.safetensors"))
     ):
         return root
-
-    # SentenceTransformers submodule layout (0_Transformer)
     st_sub = os.path.join(root, "0_Transformer")
     if os.path.exists(os.path.join(st_sub, "config.json")) and (
         os.path.exists(os.path.join(st_sub, "pytorch_model.bin")) or
         os.path.exists(os.path.join(st_sub, "model.safetensors"))
     ):
         return st_sub
-
     raise RuntimeError(
         "Could not find transformer weights.\n"
         f"Checked: {root} and {st_sub}\n"
@@ -41,20 +34,13 @@ def _resolve_transformer_dir(root: str) -> str:
 
 MODEL_DIR = _resolve_transformer_dir(MODEL_ROOT)
 
-# ---------------------------------------------------------
-# Offline model + tokenizer load (manual weight load if needed)
-# ---------------------------------------------------------
 def _load_model_and_tokenizer(model_dir: str):
-    # tokenizer loads fine from HF layout or 0_Transformer
     tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
-
     cfg = AutoConfig.from_pretrained(model_dir, local_files_only=True)
-    model = AutoModel.from_config(cfg)  # empty weights
-
-    # Determine weight file
+    model = AutoModel.from_config(cfg)  
     weights_bin = os.path.join(model_dir, "pytorch_model.bin")
     weights_sft = os.path.join(model_dir, "model.safetensors")
-
+    
     if os.path.exists(weights_bin):
         state_dict = torch.load(weights_bin, map_location="cpu")
     elif os.path.exists(weights_sft):
@@ -75,9 +61,6 @@ def _load_model_and_tokenizer(model_dir: str):
 tokenizer, model = _load_model_and_tokenizer(MODEL_DIR)
 DEVICE = torch.device("cpu")
 
-# ---------------------------------------------------------
-# Heading example bank
-# ---------------------------------------------------------
 HEADING_EXAMPLES = {
     "H1": [
         "Introduction", "Background", "Conclusion", "Overview",
@@ -93,7 +76,6 @@ HEADING_EXAMPLES = {
     ],
 }
 
-# Precompute example embeddings
 _example_texts = []
 _example_labels = []
 for lbl, arr in HEADING_EXAMPLES.items():
@@ -140,9 +122,6 @@ def semantic_heading_match(text, threshold=0.60):
         return None
     return _example_labels[best_idx]
 
-# ---------------------------------------------------------
-# PDF extraction
-# ---------------------------------------------------------
 def extract_text_blocks(pdf_path):
     doc = fitz.open(pdf_path)
     lines = []
@@ -171,26 +150,18 @@ def extract_text_blocks(pdf_path):
     return lines
 
 def extract_title_and_outline(lines):
-    # Find all lines on the first page
     first_page_lines = [l for l in lines if l['page'] == 1]
     if not first_page_lines:
         return "", []
-
-    # Find the largest font size on the first page
     max_font = max(l['font_size'] for l in first_page_lines)
-    # Collect consecutive lines at the top of the first page with max font size
     title_lines = []
     for l in first_page_lines:
         if l['font_size'] == max_font and l['text'].strip() and not l['text'].strip().isdigit():
             title_lines.append(l['text'].strip())
         elif title_lines:
-            break  # Stop at first non-title line after title block
+            break  
     title = " ".join(title_lines).strip()
-
-    # Prepare for outline extraction
-    # Get all unique font sizes in descending order (excluding title font)
     font_sizes = sorted({round(l['font_size'], 1) for l in lines if l['font_size'] != max_font}, reverse=True)
-    # Map font size to heading level
     levels = ["H1", "H2", "H3", "H4"]
     font_to_level = {}
     for i, size in enumerate(font_sizes):
@@ -205,7 +176,6 @@ def extract_title_and_outline(lines):
         line = lines[i]
         size = round(line['font_size'], 1)
         text = line['text'].strip()
-        # Only consider lines that are not empty, not just numbers, and not in the title
         if (
             size in font_to_level
             and text
@@ -214,7 +184,6 @@ def extract_title_and_outline(lines):
             and text not in used_headings
             and text not in title
         ):
-            # Merge consecutive lines with the same font size (multi-line headings)
             merged_text = text
             j = i + 1
             while (
@@ -227,27 +196,21 @@ def extract_title_and_outline(lines):
                 merged_text += " " + lines[j]['text'].strip()
                 j += 1
             merged_text = merged_text.strip()
-            # Only add if not a repeat and not a subset of a previous heading
             if merged_text and merged_text not in used_headings:
                 outline.append({
                     "level": font_to_level[size],
                     "text": merged_text,
-                    "page": line['page'] - 1 if line['page'] > 0 else 0  # zero-based page if needed
+                    "page": line['page'] - 1 if line['page'] > 0 else 0 
                 })
                 used_headings.add(merged_text)
             i = j
         else:
             i += 1
-
     return title, outline
 
-# Replace classify_headings with the new function in your pipeline
 def classify_headings(lines):
     return extract_title_and_outline(lines)
 
-# ---------------------------------------------------------
-# Save JSON
-# ---------------------------------------------------------
 def save_output_json(title, outline, output_path):
     data = {
         "title": title or "Unknown Title",

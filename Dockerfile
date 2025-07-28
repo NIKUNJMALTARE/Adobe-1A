@@ -10,10 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --default-timeout=100 --retries=5 --no-cache-dir -r requirements.txt
 
-# Copy model first
 COPY models /app/models
 
-# Copy app
 COPY main.py extract_utils.py /app/
 COPY input /app/input
 COPY output /app/output

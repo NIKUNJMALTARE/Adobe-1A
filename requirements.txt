@@ -1,23 +1,10 @@
-# Use PyTorch CPU wheels from the official index
 --extra-index-url https://download.pytorch.org/whl/cpu
-
-# Core scientific stack
 numpy==1.26.4
-
-# PDF processing
 PyMuPDF==1.23.6
-
-# PyTorch (CPU-only build)
 torch==2.2.2+cpu
-
-# Hugging Face ecosystem (transformers + tokenizer)
 transformers==4.41.2
 tokenizers==0.19.1
 huggingface_hub==0.24.0
 safetensors==0.4.3
-
-# Sentence embeddings (compatible with paraphrase-MiniLM-L6-v2)
 sentence-transformers==2.7.0
-
-# Classical ML
 scikit-learn==1.4.0
