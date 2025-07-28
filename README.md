@@ -1,4 +1,4 @@
-##Adobe Hackathon Challenge 1A
+# Adobe Hackathon Challenge 1A
 
 This project addresses **Adobe Hackathon Challenge 1A**, which involves extracting structured semantic outlines from PDF documents under strict constraints:
 
@@ -11,11 +11,11 @@ The system outputs a structured `JSON` that includes the **document title** and 
 
 ---
 
-##Approach
+# Approach
 
 This solution follows a **hybrid layout-semantic approach**, meaning it combines traditional layout-based cues (like font size and font type) with semantic understanding using a transformer model.
 
-#Steps in the Pipeline
+# Steps in the Pipeline
 
 1. **PDF Layout Parsing**  
    - Uses `PyMuPDF` to extract raw lines of text along with font sizes, font names, and page numbers.
@@ -39,16 +39,16 @@ This solution follows a **hybrid layout-semantic approach**, meaning it combines
 
 ---
 
-#Models & Libraries Used
+# Models & Libraries Used
 
-#Model
+# Model
 
 - `all-MiniLM-L6-v2`
   - Model size: ~80MB (within constraint)
   - Used for sentence embeddings to semantically classify headings
   - Fully supports **offline + CPU-only execution**
 
-#Libraries Used (in `requirements.txt`)
+# Libraries Used (in `requirements.txt`)
 
 numpy==1.26.4
 PyMuPDF==1.23.6
@@ -60,7 +60,7 @@ safetensors==0.4.3
 sentence-transformers==2.7.0
 scikit-learn==1.4.0
 
-#How to Build and Run the Solution
+# How to Build and Run the Solution
 
 1) Clone the Repository 
 2) Create a Virtual Environment: python -m venv venv (command)
