@@ -170,53 +170,80 @@ def extract_text_blocks(pdf_path):
                 })
     return lines
 
-# ---------------------------------------------------------
-# Hybrid classify
-# ---------------------------------------------------------
-def classify_headings(lines):
-    font_sizes = [round(line["font_size"], 1) for line in lines]
-    sorted_sizes = sorted(set(font_sizes), reverse=True)
+def extract_title_and_outline(lines):
+    # Find all lines on the first page
+    first_page_lines = [l for l in lines if l['page'] == 1]
+    if not first_page_lines:
+        return "", []
 
+    # Find the largest font size on the first page
+    max_font = max(l['font_size'] for l in first_page_lines)
+    # Collect consecutive lines at the top of the first page with max font size
+    title_lines = []
+    for l in first_page_lines:
+        if l['font_size'] == max_font and l['text'].strip() and not l['text'].strip().isdigit():
+            title_lines.append(l['text'].strip())
+        elif title_lines:
+            break  # Stop at first non-title line after title block
+    title = " ".join(title_lines).strip()
+
+    # Prepare for outline extraction
+    # Get all unique font sizes in descending order (excluding title font)
+    font_sizes = sorted({round(l['font_size'], 1) for l in lines if l['font_size'] != max_font}, reverse=True)
+    # Map font size to heading level
+    levels = ["H1", "H2", "H3", "H4"]
     font_to_level = {}
-    if len(sorted_sizes) >= 4:
-        font_to_level[sorted_sizes[0]] = "Title"
-        font_to_level[sorted_sizes[1]] = "H1"
-        font_to_level[sorted_sizes[2]] = "H2"
-        font_to_level[sorted_sizes[3]] = "H3"
-    elif len(sorted_sizes) >= 3:
-        font_to_level[sorted_sizes[0]] = "Title"
-        font_to_level[sorted_sizes[1]] = "H1"
-        font_to_level[sorted_sizes[2]] = "H2"
-    elif len(sorted_sizes) >= 2:
-        font_to_level[sorted_sizes[0]] = "Title"
-        font_to_level[sorted_sizes[1]] = "H1"
-    elif len(sorted_sizes) >= 1:
-        font_to_level[sorted_sizes[0]] = "Title"
+    for i, size in enumerate(font_sizes):
+        if i < len(levels):
+            font_to_level[size] = levels[i]
 
-    title = None
     outline = []
+    used_headings = set()
+    prev_line = None
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        size = round(line['font_size'], 1)
+        text = line['text'].strip()
+        # Only consider lines that are not empty, not just numbers, and not in the title
+        if (
+            size in font_to_level
+            and text
+            and not text.isdigit()
+            and text.lower() not in {"table of contents", "contents"}
+            and text not in used_headings
+            and text not in title
+        ):
+            # Merge consecutive lines with the same font size (multi-line headings)
+            merged_text = text
+            j = i + 1
+            while (
+                j < len(lines)
+                and round(lines[j]['font_size'], 1) == size
+                and abs(lines[j]['page'] - line['page']) <= 1
+                and lines[j]['text'].strip()
+                and not lines[j]['text'].strip().isdigit()
+            ):
+                merged_text += " " + lines[j]['text'].strip()
+                j += 1
+            merged_text = merged_text.strip()
+            # Only add if not a repeat and not a subset of a previous heading
+            if merged_text and merged_text not in used_headings:
+                outline.append({
+                    "level": font_to_level[size],
+                    "text": merged_text,
+                    "page": line['page'] - 1 if line['page'] > 0 else 0  # zero-based page if needed
+                })
+                used_headings.add(merged_text)
+            i = j
+        else:
+            i += 1
 
-    for line in lines:
-        text = line["text"]
-        size = round(line["font_size"], 1)
-        level = font_to_level.get(size)
-
-        sem_level = None
-        if not level:
-            if len(text) <= 12 or text.isupper() or text.istitle():
-                sem_level = semantic_heading_match(text)
-
-        final_level = level or sem_level
-
-        if final_level == "Title" and title is None:
-            title = text
-        elif final_level in ["H1", "H2", "H3"]:
-            outline.append({
-                "level": final_level,
-                "text": text,
-                "page": line["page"]
-            })
     return title, outline
+
+# Replace classify_headings with the new function in your pipeline
+def classify_headings(lines):
+    return extract_title_and_outline(lines)
 
 # ---------------------------------------------------------
 # Save JSON
