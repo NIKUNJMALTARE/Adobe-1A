@@ -72,5 +72,5 @@ scikit-learn==1.4.0
 
 # Docker Commands
 
-1) docker build --platform linux/amd64 -t adobe1a.outlineextractor .
-2) docker run --rm -v ${PWD}\input:/app/input:ro -v ${PWD}\output\adobe1a:/app/output --network none adobe1a.outlineextractor
+1) Build Command: docker build --platform linux/amd64 -t adobe1a.outlineextractor .
+2) Run Command: docker run --rm -v ${PWD}\input:/app/input:ro -v ${PWD}\output\adobe1a:/app/output --network none adobe1a.outlineextractor
