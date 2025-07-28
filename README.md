@@ -63,15 +63,15 @@ scikit-learn==1.4.0
 #How to Build and Run the Solution
 
 1) Clone the Repository 
-2) Create a Virtual Environment
-python -m venv venv (command)
+2) Create a Virtual Environment--
+python -m venv venv (command)--
 venv\Scripts\activate (activate command)
-3) Install All Dependencies
+3) Install All Dependencies--
 pip install -r requirements.txt (command)
-4) Download the Model Locally (One-Time)
+4) Download the Model Locally (One-Time)--
 python download_model.py (command)
 5) Place your .pdf files into the /input folder
-6) Run the main file
+6) Run the main file--
 python main.py (command)
 
 #Docker Commands
