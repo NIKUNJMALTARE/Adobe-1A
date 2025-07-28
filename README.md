@@ -1,4 +1,4 @@
-#Adobe Hackathon Challenge 1A
+##Adobe Hackathon Challenge 1A
 
 This project addresses **Adobe Hackathon Challenge 1A**, which involves extracting structured semantic outlines from PDF documents under strict constraints:
 
@@ -11,7 +11,7 @@ The system outputs a structured `JSON` that includes the **document title** and 
 
 ---
 
-#Approach
+##Approach
 
 This solution follows a **hybrid layout-semantic approach**, meaning it combines traditional layout-based cues (like font size and font type) with semantic understanding using a transformer model.
 
